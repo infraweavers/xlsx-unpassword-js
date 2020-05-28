@@ -12,16 +12,19 @@
     <div class="page-header">
         <h1>xlsx-unpassword-js</h1>
     </div>
-    <div>
-        <label for='file-input'>Workbook:</label> <input id="file-input" type="file" style="display: inline" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+    <div class='form-group'>
+        <label for='file-input'>Workbook:</label>
+        <input id="file-input" type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
     </div>
-    <div>
-        <label for='input-password'>Password:</label> <input id="input-password" type="password" style="display: inline" />
+    <div class='form-group'>
+        <label for='input-password'>Password:</label>
+        <input id="input-password" class="form-control" type="password" />
     </div>
-
-    <button class="btn btn-primary" onclick="generateBlob()">Generate blob</button>
-    <button class="btn btn-primary" onclick="generateBase64()">Generate base64</button>
+        
+    <button class="btn btn-primary" onclick="generateBlob()">Download</button>
 </div>
+
+
 
 <script type="text/javascript" src="xlsx-populate.min.js"></script>
 <script type="text/javascript">
@@ -48,32 +51,19 @@
     function generateBlob() {
         return generate()
             .then(function (blob) {
+                var outputFilename = fileInput.files[0].name.replace(/\.([^.]+)$/, '-decrypted.$1');
+
                 if (window.navigator && window.navigator.msSaveOrOpenBlob) {
-                    window.navigator.msSaveOrOpenBlob(blob, "out.xlsx");
+                    window.navigator.msSaveOrOpenBlob(blob, outputFilename);
                 } else {
                     var url = window.URL.createObjectURL(blob);
                     var a = document.createElement("a");
                     document.body.appendChild(a);
                     a.href = url;
-                    a.download = "out.xlsx";
+                    a.download = outputFilename;
                     a.click();
                     window.URL.revokeObjectURL(url);
                     document.body.removeChild(a);
-                }
-            })
-            .catch(function (err) {
-                alert(err.message || err);
-                throw err;
-            });
-    }
-
-    function generateBase64() {
-        return generate("base64")
-            .then(function (base64) {
-                if (window.navigator && window.navigator.msSaveOrOpenBlob) {
-                    throw new Error("Navigating to data URI is not supported in IE.");
-                } else {
-                    location.href = "data:" + XlsxPopulate.MIME_TYPE + ";base64," + base64;
                 }
             })
             .catch(function (err) {

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>xlsx-unpassword-js</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<body>
+
+<div class="container">
+    <div class="page-header">
+        <h1>xlsx-unpassword-js</h1>
+    </div>
+    <div>
+        <label for='file-input'>Workbook:</label> <input id="file-input" type="file" style="display: inline" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+    </div>
+    <div>
+        <label for='input-password'>Password:</label> <input id="input-password" type="password" style="display: inline" />
+    </div>
+
+    <button class="btn btn-primary" onclick="generateBlob()">Generate blob</button>
+    <button class="btn btn-primary" onclick="generateBase64()">Generate base64</button>
+</div>
+
+<script type="text/javascript" src="xlsx-populate.min.js"></script>
+<script type="text/javascript">
+    // Promise is not defined in IE so xlsx-populate uses a polyfill via JSZip.
+    var Promise = XlsxPopulate.Promise;
+
+    var fileInput = document.getElementById("file-input");
+
+    function getWorkbook() {
+        var file = fileInput.files[0];
+        if (!file) return Promise.reject("You must select a file.");
+        var password = document.getElementById("input-password").value;
+        if (!password) return Promise.reject("You must enter a password.");
+        return XlsxPopulate.fromDataAsync(file, { password: password });
+    }
+
+    function generate(type) {
+        return getWorkbook()
+            .then(function (workbook) {
+                return workbook.outputAsync({ type: type });
+            });
+    }
+
+    function generateBlob() {
+        return generate()
+            .then(function (blob) {
+                if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+                    window.navigator.msSaveOrOpenBlob(blob, "out.xlsx");
+                } else {
+                    var url = window.URL.createObjectURL(blob);
+                    var a = document.createElement("a");
+                    document.body.appendChild(a);
+                    a.href = url;
+                    a.download = "out.xlsx";
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                }
+            })
+            .catch(function (err) {
+                alert(err.message || err);
+                throw err;
+            });
+    }
+
+    function generateBase64() {
+        return generate("base64")
+            .then(function (base64) {
+                if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+                    throw new Error("Navigating to data URI is not supported in IE.");
+                } else {
+                    location.href = "data:" + XlsxPopulate.MIME_TYPE + ";base64," + base64;
+                }
+            })
+            .catch(function (err) {
+                alert(err.message || err);
+                throw err;
+            });
+    }
+</script>
+</body>
+</html>
